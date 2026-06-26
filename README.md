@@ -447,3 +447,60 @@ curl.exe "http://localhost:8080/api/products/search?query=$query&limit=5"
 ```
 
 Frontend code should use `URLSearchParams` or axios `params` so query text is encoded automatically.
+
+## Frontend Search UI
+
+The frontend is a Vite React app in `frontend/`.
+
+Create a local environment file before running it.
+
+```powershell
+cd C:\dev\product-embedding-search\frontend
+copy .env.example .env
+```
+
+Default value:
+
+```properties
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+Run the frontend:
+
+```powershell
+cd C:\dev\product-embedding-search\frontend
+npm install
+npm run dev
+```
+
+Open the Vite URL printed in the terminal, enter a query such as
+`가볍고 배터리 오래가는 노트북`, and click the search button.
+
+### Frontend Search Test Flow
+
+1. Run MySQL.
+2. Run the FastAPI embedding server.
+
+```powershell
+cd C:\dev\product-embedding-search\embedding-server
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+3. Run the Spring backend.
+
+```powershell
+cd C:\dev\product-embedding-search\backend
+$env:EMBEDDING_SERVER_URL="http://localhost:8000"
+.\gradlew.bat bootRun
+```
+
+4. If product embeddings are empty, run the embedding batch once.
+
+```powershell
+cd C:\dev\product-embedding-search\embedding-batch
+pip install -r requirements.txt
+python generate_embeddings.py
+```
+
+5. Run the frontend and search from the browser.

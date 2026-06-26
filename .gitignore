@@ -9,3 +9,6 @@ out/
 backend/.env
 *.log
 application-local.properties
+
+frontend/node_modules/
+frontend/dist/
