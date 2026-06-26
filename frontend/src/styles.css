@@ -129,12 +129,16 @@ h1 {
 
 .product-card {
   display: grid;
-  grid-template-columns: 168px 1fr;
+  grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   min-height: 168px;
   border: 1px solid #dfe4dd;
   border-radius: 8px;
   background: #ffffff;
+}
+
+.product-card:has(.product-image) {
+  grid-template-columns: 168px minmax(0, 1fr);
 }
 
 .product-image {
@@ -149,6 +153,7 @@ h1 {
   display: grid;
   align-content: start;
   gap: 10px;
+  min-width: 0;
   padding: 20px;
 }
 
@@ -160,6 +165,7 @@ h1 {
 }
 
 .product-heading h2 {
+  min-width: 0;
   color: #182026;
   font-size: 1.15rem;
   line-height: 1.35;
