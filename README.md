@@ -388,3 +388,62 @@ DB_PASSWORD=your_password
 ```text
 Python 배치로 임베딩 생성 -> MySQL 저장 -> Spring 검색 API에서 유사도 계산
 ```
+
+## Local Search Run Commands
+
+Use 3 terminals to run local semantic search.
+
+### 1. FastAPI embedding server
+
+```powershell
+cd C:\dev\product-embedding-search\embedding-server
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+### 2. Spring backend
+
+Default port is `8080`.
+
+```powershell
+cd C:\dev\product-embedding-search\backend
+$env:EMBEDDING_SERVER_URL="http://localhost:8000"
+.\gradlew.bat bootRun
+```
+
+If port `8080` is already in use, run Spring on `8081`.
+
+```powershell
+cd C:\dev\product-embedding-search\backend
+$env:SERVER_PORT="8081"
+$env:EMBEDDING_SERVER_URL="http://localhost:8000"
+.\gradlew.bat bootRun
+```
+
+### 3. Product embeddings batch
+
+Run this once before search if `product_embeddings` is empty.
+
+```powershell
+cd C:\dev\product-embedding-search\embedding-batch
+pip install -r requirements.txt
+python generate_embeddings.py
+```
+
+### 4. Search API test
+
+When using `curl.exe` in PowerShell, encode the query text first.
+
+```powershell
+$query = [uri]::EscapeDataString("<your Korean query>")
+curl.exe "http://localhost:8081/api/products/search?query=$query&limit=5"
+```
+
+If Spring is running on `8080`, use this URL instead.
+
+```powershell
+$query = [uri]::EscapeDataString("<your Korean query>")
+curl.exe "http://localhost:8080/api/products/search?query=$query&limit=5"
+```
+
+Frontend code should use `URLSearchParams` or axios `params` so query text is encoded automatically.
