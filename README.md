@@ -271,6 +271,84 @@ Spring 서버는 Python을 실행하지 않습니다. 사람이 터미널에서 
 sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 ```
 
+## FastAPI Query Embedding Server
+
+검색어 임베딩은 Spring에서 Python 파일을 직접 실행하지 않고 별도 FastAPI 서버를 호출해서 생성합니다. 이 서버는 상품 임베딩 배치와 같은 모델을 사용합니다.
+
+```text
+sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+```
+
+서버 시작 시 모델을 한 번만 로딩하고, `POST /embed`로 검색어 임베딩을 반환합니다.
+
+```powershell
+cd embedding-server
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+Request:
+
+```http
+POST http://localhost:8000/embed
+Content-Type: application/json
+```
+
+```json
+{
+  "text": "가볍고 배터리 오래가는 노트북"
+}
+```
+
+Response:
+
+```json
+{
+  "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding": [0.123, -0.456]
+}
+```
+
+## Semantic Product Search
+
+Spring 검색 API는 FastAPI 임베딩 서버의 `POST /embed`를 호출해 검색어 임베딩을 받고, MySQL `product_embeddings.embedding_json`에 저장된 상품 임베딩과 cosine similarity를 계산합니다.
+
+```http
+GET /api/products/search?query=가볍고 배터리 오래가는 노트북&limit=5
+```
+
+Response:
+
+```json
+[
+  {
+    "id": 1,
+    "name": "상품명",
+    "category": "노트북",
+    "description": "상품 설명",
+    "priceKrw": 1290000,
+    "tags": "가벼움, 배터리",
+    "similarity": 0.8234
+  }
+]
+```
+
+FastAPI 서버 주소는 `backend/src/main/resources/application.properties` 또는 `backend/.env`에서 설정할 수 있습니다.
+
+```properties
+EMBEDDING_SERVER_URL=http://localhost:8000
+```
+
+전체 실행 순서:
+
+```text
+1. MySQL 실행
+2. Spring CSV import로 products 적재
+3. embedding-batch/generate_embeddings.py 실행으로 product_embeddings 적재
+4. embedding-server FastAPI 실행
+5. Spring GET /api/products/search 호출
+```
+
 실행 방법:
 
 ```powershell
