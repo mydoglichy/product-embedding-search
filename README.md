@@ -452,6 +452,19 @@ Frontend code should use `URLSearchParams` or axios `params` so query text is en
 
 The frontend is a Vite React app in `frontend/`.
 
+### Local ports
+
+Run each server on a different port.
+
+| Process | Default port | Role |
+| --- | --- | --- |
+| FastAPI embedding server | `8000` | Creates query embeddings |
+| Spring backend | `8080` or `8081` | Provides `/api/products/search` |
+| Vite frontend | `5173` | Browser UI |
+
+The frontend must call the Spring backend port, not the FastAPI embedding server port.
+Set `frontend/.env` to the same port used by Spring.
+
 Create a local environment file before running it.
 
 ```powershell
@@ -464,6 +477,14 @@ Default value:
 ```properties
 VITE_API_BASE_URL=http://localhost:8080
 ```
+
+If Spring starts on `8081`, change `frontend\.env` to:
+
+```properties
+VITE_API_BASE_URL=http://localhost:8081
+```
+
+Restart the Vite dev server after changing `.env`.
 
 Run the frontend:
 
@@ -494,6 +515,18 @@ cd C:\dev\product-embedding-search\backend
 $env:EMBEDDING_SERVER_URL="http://localhost:8000"
 .\gradlew.bat bootRun
 ```
+
+If port `8080` is already in use, run Spring on `8081`.
+
+```powershell
+cd C:\dev\product-embedding-search\backend
+$env:SERVER_PORT="8081"
+$env:EMBEDDING_SERVER_URL="http://localhost:8000"
+.\gradlew.bat bootRun
+```
+
+Then set `frontend\.env` to `VITE_API_BASE_URL=http://localhost:8081`
+and restart `npm run dev`.
 
 4. If product embeddings are empty, run the embedding batch once.
 
