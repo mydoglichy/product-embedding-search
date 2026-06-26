@@ -258,3 +258,55 @@ DELETE /api/admin/products/{id}
 - `product_embeddings.embedding_json`에 벡터 저장
 - `POST /api/semantic-search` 추가
 - cosine similarity 기반 검색 결과 반환
+
+## Local Python Embedding Batch
+
+이 프로젝트는 외부 유료 API(OpenAI 등)를 사용하지 않고, 로컬 Python 배치 스크립트에서 `sentence-transformers` 모델로 상품 임베딩을 생성합니다.
+
+Spring 서버는 Python을 실행하지 않습니다. 사람이 터미널에서 배치를 직접 실행하면 MySQL의 `products` 테이블을 읽고, `product_embeddings` 테이블에 아직 없는 상품만 임베딩을 저장합니다. 이후 Spring 검색 API는 저장된 `product_embeddings.embedding_json`을 읽어 유사도 계산을 담당하는 구조입니다.
+
+기본 모델:
+
+```text
+sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+```
+
+실행 방법:
+
+```powershell
+cd embedding-batch
+pip install -r requirements.txt
+python generate_embeddings.py
+```
+
+기본적으로 배치는 Spring 서버와 같은 `backend/.env`를 읽습니다.
+
+지원하는 Spring 환경 변수:
+
+```properties
+MYSQL_DATABASE=product_embedding_search
+MYSQL_USERNAME=product_user
+MYSQL_PASSWORD=your_password
+```
+
+배치만 별도 DB 설정으로 실행하고 싶으면 `embedding-batch/.env.example`을 복사해서 `embedding-batch/.env`를 만들 수 있습니다. 이 파일은 `backend/.env`보다 우선 적용됩니다.
+
+```powershell
+cp .env.example .env
+```
+
+```properties
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=product_embedding_search
+DB_USER=product_user
+DB_PASSWORD=your_password
+```
+
+실행 후 `product_embeddings` 테이블의 `embedding_json` 컬럼에 JSON 배열 문자열 형태의 임베딩 벡터가 저장됩니다.
+
+현재 흐름:
+
+```text
+Python 배치로 임베딩 생성 -> MySQL 저장 -> Spring 검색 API에서 유사도 계산
+```
