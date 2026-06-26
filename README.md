@@ -1,10 +1,10 @@
-# Product Embedding Search Practice
+# Product Embedding Search
 
-## 프로젝트 목표
+Spring Boot 기반의 상품 의미 검색 API 서버입니다.
 
-이 프로젝트는 상품 데이터를 임베딩하여 사용자의 자연어 검색어와 가장 유사한 상품을 찾아주는 Spring Boot 기반 REST API 서버를 구현하는 연습 프로젝트이다.
+상품 정보를 MySQL에 저장하고, 상품 설명 텍스트를 임베딩하여 사용자 자연어 검색어와 가장 유사한 상품을 추천합니다.
 
-사용자는 검색창에 다음과 같은 자연어 검색어를 입력할 수 있다.
+사용자는 다음과 같은 자연어 검색어로 상품을 검색할 수 있습니다.
 
 ```text
 조용한 사무용 마우스 추천
@@ -13,96 +13,247 @@ QHD 고주사율 게이밍 모니터
 저렴한 노이즈캔슬링 이어폰
 ```
 
-서버는 사용자의 검색어를 임베딩하고, 미리 임베딩해둔 상품 데이터와 cosine similarity를 계산하여 유사도가 높은 상품을 JSON으로 반환한다.
+---
+
+## Features
+
+* CSV 기반 초기 상품 데이터 적재
+* MySQL 기반 상품 데이터 관리
+* 상품 설명 텍스트 임베딩 저장
+* 사용자 검색어 임베딩
+* Cosine Similarity 기반 상품 추천
+* REST API 제공
+* React 프론트엔드 연동 예정
 
 ---
 
-## 전체 흐름
+## Tech Stack
+
+### Backend
+
+* Java 21
+* Spring Boot 3
+* Gradle
+* Spring Data JPA
+* MySQL
+* Apache Commons CSV
+* OpenAI Embeddings API
+
+### Frontend
+
+* React
+* Vite
+* JavaScript
+* CSS
+
+---
+
+## Architecture
 
 ```text
-사용자 검색어 입력
-        ↓
-프론트엔드에서 Spring Boot API로 요청
-        ↓
-Spring Boot 서버가 검색어를 OpenAI Embeddings API로 임베딩
-        ↓
-서버에 저장된 상품 임베딩들과 cosine similarity 계산
-        ↓
-유사도 높은 상품 top K개 정렬
-        ↓
-JSON 응답 반환
-        ↓
-프론트엔드에서 검색 결과 표시
+Client
+  ↓
+Spring Boot REST API
+  ↓
+MySQL
+```
+
+임베딩 검색 흐름은 다음과 같습니다.
+
+```text
+Product CSV
+  ↓
+MySQL products table
+  ↓
+Embedding generation API
+  ↓
+MySQL product_embeddings table
+  ↓
+User search query
+  ↓
+OpenAI Embeddings API
+  ↓
+Cosine similarity
+  ↓
+Recommended products
 ```
 
 ---
 
-## 데이터 구조
+## Project Structure
 
-프로젝트 루트에는 `product_embedding_practice_50.csv` 파일이 존재한다.
-
-CSV 컬럼은 다음과 같다.
-
-| 컬럼명            | 설명                    |
-| -------------- | --------------------- |
-| id             | 상품 고유 ID              |
-| name           | 상품명                   |
-| category       | 상품 카테고리               |
-| description    | 상품 설명                 |
-| price_krw      | 상품 가격                 |
-| tags           | 상품 특징 태그              |
-| example_query  | 예시 검색어                |
-| embedding_text | 임베딩에 사용할 상품 통합 설명 텍스트 |
-
-임베딩에는 기본적으로 `embedding_text` 컬럼을 사용한다.
+```text
+product-embedding-search/
+├── README.md
+├── build.gradle
+├── settings.gradle
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/example/productembedding/
+│   │   │       ├── ProductEmbeddingApplication.java
+│   │   │       ├── controller/
+│   │   │       ├── service/
+│   │   │       ├── dto/
+│   │   │       ├── entity/
+│   │   │       ├── repository/
+│   │   │       ├── config/
+│   │   │       └── exception/
+│   │   └── resources/
+│   │       ├── application.properties
+│   │       └── data/
+│   │           └── product_embedding_practice_50.csv
+│   └── test/
+│       └── java/
+```
 
 ---
 
-## 구현 단계
+## Database
 
-### 1단계: CSV 기반 상품 API
+### products
 
-먼저 임베딩 없이 CSV 파일을 읽고 상품 데이터를 API로 반환한다.
+상품 기본 정보를 저장합니다.
 
-구현할 기능:
+| Column         | Description        |
+| -------------- | ------------------ |
+| id             | 상품 ID              |
+| name           | 상품명                |
+| category       | 카테고리               |
+| description    | 상품 설명              |
+| price_krw      | 가격                 |
+| tags           | 상품 태그              |
+| example_query  | 예시 검색어             |
+| embedding_text | 임베딩에 사용할 상품 설명 텍스트 |
 
-* 서버 시작 시 CSV 파일 읽기
-* 상품 데이터를 메모리에 저장
-* 전체 상품 목록 조회 API
-* 단순 키워드 검색 API
+### product_embeddings
 
-예상 API:
+상품 임베딩 벡터를 저장합니다.
+
+| Column         | Description |
+| -------------- | ----------- |
+| id             | 임베딩 ID      |
+| product_id     | 상품 ID       |
+| model          | 임베딩 모델명     |
+| embedding_json | 임베딩 벡터 JSON |
+| created_at     | 생성 시각       |
+
+`embedding_json`에는 임베딩 벡터를 JSON 배열 문자열로 저장합니다.
+
+```json
+[0.0123, -0.0456, 0.0789]
+```
+
+---
+
+## Environment Variables
+
+OpenAI API 키는 환경변수로 관리합니다.
+
+```bash
+OPENAI_API_KEY=your_openai_api_key
+```
+
+---
+
+## MySQL Setup
+
+로컬 MySQL에서 다음 데이터베이스를 생성합니다.
+
+```sql
+CREATE DATABASE product_embedding_search
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+```
+
+---
+
+## Application Properties
+
+`src/main/resources/application.properties`
+
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/product_embedding_search?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+spring.datasource.username=root
+spring.datasource.password=your_password
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+openai.embedding.model=text-embedding-3-small
+```
+
+---
+
+## Run
+
+```bash
+./gradlew bootRun
+```
+
+Windows 환경에서는 다음 명령어를 사용할 수 있습니다.
+
+```bash
+gradlew.bat bootRun
+```
+
+---
+
+## API
+
+### Get Products
+
+전체 상품 목록을 조회합니다.
 
 ```http
 GET /api/products
 ```
 
+### Get Product By ID
+
+상품 ID로 단일 상품을 조회합니다.
+
+```http
+GET /api/products/{id}
+```
+
+### Keyword Search
+
+상품명, 카테고리, 설명, 태그를 기준으로 단순 키워드 검색을 수행합니다.
+
 ```http
 GET /api/search?query=마우스
 ```
 
----
+### Create Product Embeddings
 
-### 2단계: 임베딩 기반 검색 API
+상품의 `embedding_text`를 임베딩하여 DB에 저장합니다.
 
-OpenAI Embeddings API를 사용하여 상품 검색을 의미 기반 검색으로 확장한다.
+```http
+POST /api/admin/embeddings/products
+```
 
-구현할 기능:
+Response:
 
-* `embedding_text` 컬럼을 임베딩
-* 상품 임베딩을 메모리에 저장
-* 사용자 검색어 임베딩
-* cosine similarity 계산
-* 유사도 높은 상품 top K개 반환
+```json
+{
+  "createdCount": 50,
+  "message": "Product embeddings created successfully"
+}
+```
 
-예상 API:
+### Semantic Search
+
+사용자 검색어를 임베딩하고, DB에 저장된 상품 임베딩과 비교하여 유사도가 높은 상품을 반환합니다.
 
 ```http
 POST /api/semantic-search
 Content-Type: application/json
 ```
 
-요청 예시:
+Request:
 
 ```json
 {
@@ -111,7 +262,7 @@ Content-Type: application/json
 }
 ```
 
-응답 예시:
+Response:
 
 ```json
 {
@@ -132,64 +283,28 @@ Content-Type: application/json
 
 ---
 
-### 3단계: 상품 임베딩 캐싱
-
-상품 임베딩을 매번 새로 생성하면 속도가 느리고 API 비용이 발생하므로, 한 번 생성한 임베딩은 로컬 파일에 저장한다.
-
-구현할 기능:
-
-* `product_embeddings_cache.json` 파일이 있으면 캐시에서 임베딩 로드
-* 캐시가 없으면 OpenAI API로 상품 임베딩 생성
-* 생성된 임베딩을 캐시 파일로 저장
-* 검색 시 캐시된 상품 임베딩 사용
-
----
-
-## 백엔드 책임
-
-Spring Boot 서버는 다음 역할을 담당한다.
-
-* CSV 상품 데이터 로딩
-* 상품 데이터 메모리 관리
-* OpenAI Embeddings API 호출
-* cosine similarity 계산
-* 검색 결과 정렬
-* REST API 응답 반환
-
-프론트엔드는 별도로 구현하며, Spring Boot 서버는 JSON API만 제공한다.
-
----
-
-## 기술 스택
-
-* Java 21
-* Spring Boot 3
-* Maven
-* Apache Commons CSV
-* OpenAI Embeddings API
-* REST API
-* CSV 기반 메모리 저장소
-
----
-
-## 환경 변수
-
-OpenAI API 키는 환경변수로 관리한다.
-
-```bash
-OPENAI_API_KEY=your_api_key_here
-```
-
----
-
-## 최종 목표
-
-최종적으로 사용자가 자연어로 원하는 상품 조건을 입력하면, 단순 키워드 일치가 아니라 의미적으로 가장 가까운 상품을 추천하는 검색 API를 구현한다.
-
-예를 들어 사용자가 다음과 같이 입력하면,
+## Search Flow
 
 ```text
-도서관에서 쓰기 좋은 조용한 마우스
+User query
+  ↓
+Create query embedding
+  ↓
+Load product embeddings from DB
+  ↓
+Calculate cosine similarity
+  ↓
+Sort by similarity
+  ↓
+Return top K products
 ```
 
-서버는 “도서관”, “조용한”, “마우스”라는 맥락을 바탕으로 무소음 사무용 마우스 상품을 높은 순위로 반환해야 한다.
+---
+
+## Notes
+
+* 상품 데이터는 최초 실행 시 CSV에서 MySQL로 적재합니다.
+* 상품 임베딩은 관리용 API를 통해 생성합니다.
+* 검색 요청 시에는 사용자 검색어만 실시간으로 임베딩합니다.
+* 상품 임베딩은 검색 요청마다 다시 생성하지 않습니다.
+* 프론트엔드는 별도 React 프로젝트로 구현할 예정입니다.
