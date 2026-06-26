@@ -6,5 +6,6 @@ build/
 out/
 
 .env
+backend/.env
 *.log
 application-local.properties
