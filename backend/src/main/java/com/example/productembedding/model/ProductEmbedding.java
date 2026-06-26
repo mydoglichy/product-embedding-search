@@ -33,6 +33,15 @@ public class ProductEmbedding {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(
+            name = "updated_at",
+            nullable = false,
+            insertable = false,
+            updatable = false,
+            columnDefinition = "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+    )
+    private LocalDateTime updatedAt;
+
     protected ProductEmbedding() {
     }
 
