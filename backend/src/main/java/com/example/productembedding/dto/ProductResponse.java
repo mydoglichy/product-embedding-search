@@ -12,12 +12,12 @@ public record ProductResponse(
 ) {
     public static ProductResponse from(Product product) {
         return new ProductResponse(
-                product.id(),
-                product.name(),
-                product.category(),
-                product.description(),
-                product.priceKrw(),
-                product.tags()
+                product.getId(),
+                product.getName(),
+                product.getCategory(),
+                product.getDescription(),
+                product.getPriceKrw(),
+                product.getTags()
         );
     }
 }

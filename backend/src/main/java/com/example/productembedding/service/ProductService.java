@@ -1,24 +1,26 @@
 package com.example.productembedding.service;
 
+import com.example.productembedding.dto.ProductRequest;
 import com.example.productembedding.model.Product;
-import jakarta.annotation.PostConstruct;
+import com.example.productembedding.repository.ProductEmbeddingRepository;
+import com.example.productembedding.repository.ProductRepository;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
 @Service
+@Transactional(readOnly = true)
 public class ProductService {
 
     private static final String CSV_PATH = "data/product_embedding_practice_50.csv";
@@ -33,10 +35,62 @@ public class ProductService {
             "embedding_text"
     );
 
-    private final List<Product> products = new ArrayList<>();
+    private final ProductRepository productRepository;
+    private final ProductEmbeddingRepository productEmbeddingRepository;
 
-    @PostConstruct
-    void loadProducts() {
+    public ProductService(ProductRepository productRepository, ProductEmbeddingRepository productEmbeddingRepository) {
+        this.productRepository = productRepository;
+        this.productEmbeddingRepository = productEmbeddingRepository;
+    }
+
+    public List<Product> findAll() {
+        return productRepository.findAll();
+    }
+
+    public Product findById(long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("상품을 찾을 수 없습니다. id=" + id));
+    }
+
+    public List<Product> searchByKeyword(String query) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+
+        return productRepository.searchByKeyword(query.trim());
+    }
+
+    @Transactional
+    public Product create(ProductRequest request) {
+        return productRepository.save(toProduct(null, request));
+    }
+
+    @Transactional
+    public Product update(long id, ProductRequest request) {
+        Product product = findById(id);
+        product.update(
+                request.name(),
+                request.category(),
+                request.description(),
+                request.priceKrw(),
+                request.tags(),
+                request.exampleQuery(),
+                request.embeddingText()
+        );
+        return product;
+    }
+
+    @Transactional
+    public void delete(long id) {
+        if (!productRepository.existsById(id)) {
+            throw new NoSuchElementException("상품을 찾을 수 없습니다. id=" + id);
+        }
+        productEmbeddingRepository.deleteByProductId(id);
+        productRepository.deleteById(id);
+    }
+
+    @Transactional
+    public int importCsv() {
         ClassPathResource resource = new ClassPathResource(CSV_PATH);
         if (!resource.exists()) {
             throw new IllegalStateException("CSV 파일을 찾을 수 없습니다: src/main/resources/" + CSV_PATH);
@@ -54,38 +108,18 @@ public class ProductService {
                         .parse(reader)
         ) {
             validateRequiredColumns(parser);
-            products.clear();
 
+            int importedCount = 0;
             for (CSVRecord record : parser) {
-                products.add(toProduct(record));
+                productRepository.save(toProduct(record));
+                importedCount++;
             }
+            return importedCount;
         } catch (IOException e) {
             throw new IllegalStateException("CSV 파일을 읽는 중 오류가 발생했습니다: src/main/resources/" + CSV_PATH, e);
         } catch (IllegalArgumentException e) {
             throw new IllegalStateException("CSV 데이터 형식이 올바르지 않습니다: " + e.getMessage(), e);
         }
-    }
-
-    public List<Product> findAll() {
-        return List.copyOf(products);
-    }
-
-    public Product findById(long id) {
-        return products.stream()
-                .filter(product -> product.id() == id)
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("상품을 찾을 수 없습니다. id=" + id));
-    }
-
-    public List<Product> searchByKeyword(String query) {
-        if (query == null || query.isBlank()) {
-            return List.of();
-        }
-
-        String normalizedQuery = query.toLowerCase(Locale.ROOT);
-        return products.stream()
-                .filter(product -> containsKeyword(product, normalizedQuery))
-                .toList();
     }
 
     private void validateRequiredColumns(CSVParser parser) {
@@ -117,14 +151,16 @@ public class ProductService {
         }
     }
 
-    private boolean containsKeyword(Product product, String normalizedQuery) {
-        return contains(product.name(), normalizedQuery)
-                || contains(product.category(), normalizedQuery)
-                || contains(product.description(), normalizedQuery)
-                || contains(product.tags(), normalizedQuery);
-    }
-
-    private boolean contains(String value, String normalizedQuery) {
-        return value != null && value.toLowerCase(Locale.ROOT).contains(normalizedQuery);
+    private Product toProduct(Long id, ProductRequest request) {
+        return new Product(
+                id,
+                request.name(),
+                request.category(),
+                request.description(),
+                request.priceKrw(),
+                request.tags(),
+                request.exampleQuery(),
+                request.embeddingText()
+        );
     }
 }
