@@ -472,16 +472,16 @@ cd C:\dev\product-embedding-search\frontend
 copy .env.example .env
 ```
 
-Default value:
-
-```properties
-VITE_API_BASE_URL=http://localhost:8080
-```
-
-If Spring starts on `8081`, change `frontend\.env` to:
+Default value for the local frontend setup in this README:
 
 ```properties
 VITE_API_BASE_URL=http://localhost:8081
+```
+
+If Spring starts on `8080`, change `frontend\.env` to:
+
+```properties
+VITE_API_BASE_URL=http://localhost:8080
 ```
 
 Restart the Vite dev server after changing `.env`.
@@ -512,20 +512,30 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 
 ```powershell
 cd C:\dev\product-embedding-search\backend
-$env:EMBEDDING_SERVER_URL="http://localhost:8000"
-.\gradlew.bat bootRun
-```
-
-If port `8080` is already in use, run Spring on `8081`.
-
-```powershell
-cd C:\dev\product-embedding-search\backend
 $env:SERVER_PORT="8081"
 $env:EMBEDDING_SERVER_URL="http://localhost:8000"
 .\gradlew.bat bootRun
 ```
 
-Then set `frontend\.env` to `VITE_API_BASE_URL=http://localhost:8081`
+If you instead run Spring on `8080`, update `frontend\.env` to
+`VITE_API_BASE_URL=http://localhost:8080`.
+
+The full local flow is:
+
+```text
+Frontend 5173 -> Spring 8081 -> FastAPI 8000
+```
+
+If port `8081` is already in use, choose another Spring port and use the same port in `frontend\.env`.
+
+```powershell
+cd C:\dev\product-embedding-search\backend
+$env:SERVER_PORT="<spring-port>"
+$env:EMBEDDING_SERVER_URL="http://localhost:8000"
+.\gradlew.bat bootRun
+```
+
+Then set `frontend\.env` to `VITE_API_BASE_URL=http://localhost:<spring-port>`
 and restart `npm run dev`.
 
 4. If product embeddings are empty, run the embedding batch once.
