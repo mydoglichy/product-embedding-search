@@ -51,4 +51,28 @@ public class ProductEmbedding {
         this.embeddingJson = embeddingJson;
         this.createdAt = LocalDateTime.now();
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Product getProduct() {
+        return product;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public String getEmbeddingJson() {
+        return embeddingJson;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
 }
