@@ -1,8 +1,10 @@
 .gradle/
 build/
+
+.idea/
+*.iml
 out/
 
-*.class
+.env
 *.log
-
-!.gradle/wrapper/
+application-local.properties
